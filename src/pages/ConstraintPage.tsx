@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import Layout from '../components/common/Layout';
 import ConstraintList from '../components/entities/contraint/ConstraintList';
 import ConstraintForm from '../components/entities/contraint/ConstraintForm';
+import ExcelUploadModal from '../components/excel/ExcelUploadModal';
 import { ConstraintDTO } from '../types/entities';
 
 const ConstraintPage: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
   const [selectedConstraint, setSelectedConstraint] = useState<ConstraintDTO | undefined>();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
@@ -19,6 +21,10 @@ const ConstraintPage: React.FC = () => {
     setIsFormOpen(true);
   };
 
+  const handleExcelUpload = () => {
+    setIsExcelModalOpen(true);
+  };
+
   const handleFormClose = () => {
     setIsFormOpen(false);
     setSelectedConstraint(undefined);
@@ -28,12 +34,17 @@ const ConstraintPage: React.FC = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
+  const handleExcelSuccess = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
+
   return (
     <Layout>
       <ConstraintList 
         key={refreshTrigger} 
         onEdit={handleEdit} 
         onAdd={handleAdd}
+        onExcelUpload={handleExcelUpload}
       />
       
       <ConstraintForm
@@ -41,6 +52,14 @@ const ConstraintPage: React.FC = () => {
         onClose={handleFormClose}
         onSave={handleFormSave}
         constraint={selectedConstraint}
+      />
+
+      <ExcelUploadModal
+        isOpen={isExcelModalOpen}
+        onClose={() => setIsExcelModalOpen(false)}
+        onSuccess={handleExcelSuccess}
+        entityType="constraints"
+        entityName="Constraints"
       />
     </Layout>
   );
