@@ -17,6 +17,10 @@ import SquadPage from './pages/SquadPage';
 import TaskPage from './pages/TaskPage';
 import DayOffRulePage from './pages/DayOffRulePage';
 import ConstraintPage from './pages/ConstraintPage';
+import RosterPage from './pages/RosterPage';
+
+// Development utilities
+import './utils/rosterTestUtils';
 import Layout from './components/common/Layout';
 
 import './App.css';
@@ -135,11 +139,7 @@ function App() {
           {/* Roster Generation - Available to all users */}
           <Route path="/roster" element={
             <ProtectedRoute>
-              {/* <RosterPage /> */}
-              <div className="p-8 text-center">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">Roster Management</h2>
-                <p className="text-gray-600">Roster generation and management coming soon...</p>
-              </div>
+              <RosterPage />
             </ProtectedRoute>
           } />
 

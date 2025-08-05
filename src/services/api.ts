@@ -8,12 +8,19 @@ export const api = axios.create({
   }
 });
 // Request interceptor: JWT token'ı Authorization header'ına ekle
+// Sadece login ve register dışındaki isteklere Authorization header ekle
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('roster_auth_token');
-    if (token) {
-      config.headers = config.headers || {};
-      config.headers['Authorization'] = `Bearer ${token}`;
+    const noAuthEndpoints = ['/auth/login', '/auth/register'];
+    const isNoAuth = noAuthEndpoints.some((endpoint) =>
+      config.url?.includes(endpoint)
+    );
+    if (!isNoAuth) {
+      const token = localStorage.getItem('roster_auth_token');
+      if (token) {
+        config.headers = config.headers || {};
+        config.headers['Authorization'] = `Bearer ${token}`;
+      }
     }
     console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
     return config;

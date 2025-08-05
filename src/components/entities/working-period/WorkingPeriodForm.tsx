@@ -30,10 +30,18 @@ const WorkingPeriodForm: React.FC<WorkingPeriodFormProps> = ({
 
   useEffect(() => {
     if (workingPeriod) {
+      // Helper function to ensure valid time object
+      const ensureValidTime = (time: LocalTime | undefined, defaultHour: number, defaultMinute: number) => {
+        if (!time || time.hour === undefined || time.hour === null || time.minute === undefined || time.minute === null) {
+          return { hour: defaultHour, minute: defaultMinute };
+        }
+        return { hour: time.hour, minute: time.minute };
+      };
+
       setFormData({
         name: workingPeriod.name || '',
-        startTime: workingPeriod.startTime || { hour: 8, minute: 0 },
-        endTime: workingPeriod.endTime || { hour: 18, minute: 0 },
+        startTime: ensureValidTime(workingPeriod.startTime, 8, 0),
+        endTime: ensureValidTime(workingPeriod.endTime, 18, 0),
         description: workingPeriod.description || '',
         active: workingPeriod.active !== false
       });
@@ -61,12 +69,20 @@ const WorkingPeriodForm: React.FC<WorkingPeriodFormProps> = ({
   };
 
   const formatTimeForInput = (time: LocalTime | undefined) => {
-    if (!time) return '08:00';
+    if (!time || time.hour === undefined || time.hour === null || time.minute === undefined || time.minute === null) {
+      return '08:00';
+    }
     return `${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}`;
   };
 
   const calculateDuration = () => {
-    if (!formData.startTime || !formData.endTime) return 0;
+    if (!formData.startTime || !formData.endTime || 
+        formData.startTime.hour === undefined || formData.startTime.hour === null ||
+        formData.startTime.minute === undefined || formData.startTime.minute === null ||
+        formData.endTime.hour === undefined || formData.endTime.hour === null ||
+        formData.endTime.minute === undefined || formData.endTime.minute === null) {
+      return 0;
+    }
     
     const start = formData.startTime.hour * 60 + formData.startTime.minute;
     const end = formData.endTime.hour * 60 + formData.endTime.minute;
@@ -77,7 +93,11 @@ const WorkingPeriodForm: React.FC<WorkingPeriodFormProps> = ({
   };
 
   const isNightPeriod = () => {
-    if (!formData.startTime || !formData.endTime) return false;
+    if (!formData.startTime || !formData.endTime ||
+        formData.startTime.hour === undefined || formData.startTime.hour === null ||
+        formData.endTime.hour === undefined || formData.endTime.hour === null) {
+      return false;
+    }
     
     const startHour = formData.startTime.hour;
     const endHour = formData.endTime.hour;
