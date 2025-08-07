@@ -118,6 +118,7 @@ const StaffList: React.FC<StaffListProps> = ({ onEdit, onAdd, onExcelUpload }) =
           <button
             onClick={onExcelUpload}
             className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+            title="Import staff from Excel file. Use format: Staff ID, First Name, Last Name, Employee Number, Email, Phone, Department, Squad, Qualifications, Active"
           >
             <DocumentArrowUpIcon className="w-5 h-5" />
             <span>Excel Import</span>

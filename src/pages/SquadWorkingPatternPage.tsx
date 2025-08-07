@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Layout from '../components/common/Layout';
 import SquadWorkingPatternList from '../components/entities/squad-working-pattern/SquadWorkingPatternList';
 import SquadWorkingPatternForm from '../components/entities/squad-working-pattern/SquadWorkingPatternForm';
-import ExcelUploadModal from '../components/excel/ExcelUploadModal';
+import { ExcelUploadModal } from '../components/excel';
 import { SquadWorkingPatternDTO } from '../types/entities';
 
 const SquadWorkingPatternPage: React.FC = () => {
@@ -34,9 +34,6 @@ const SquadWorkingPatternPage: React.FC = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
-  const handleExcelSuccess = () => {
-    setRefreshTrigger(prev => prev + 1);
-  };
 
   return (
     <Layout>
@@ -57,9 +54,10 @@ const SquadWorkingPatternPage: React.FC = () => {
       <ExcelUploadModal
         isOpen={isExcelModalOpen}
         onClose={() => setIsExcelModalOpen(false)}
-        onSuccess={handleExcelSuccess}
-        entityType="squad-working-patterns"
-        entityName="Squad Working Patterns"
+        onProcessed={() => {
+          setIsExcelModalOpen(false);
+          setRefreshTrigger(prev => prev + 1);
+        }}
       />
     </Layout>
   );

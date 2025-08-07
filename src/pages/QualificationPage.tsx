@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Layout from '../components/common/Layout';
 import QualificationList from '../components/entities/qualification/QualificationList';
 import QualificationForm from '../components/entities/qualification/QualificationForm';
-import ExcelUploadModal from '../components/excel/ExcelUploadModal';
+import { ExcelUploadModal } from '../components/excel';
 import { QualificationDTO } from '../types/entities';
 
 const QualificationPage: React.FC = () => {
@@ -34,9 +34,6 @@ const QualificationPage: React.FC = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
-  const handleExcelSuccess = () => {
-    setRefreshTrigger(prev => prev + 1);
-  };
 
   return (
     <Layout>
@@ -57,9 +54,10 @@ const QualificationPage: React.FC = () => {
       <ExcelUploadModal
         isOpen={isExcelModalOpen}
         onClose={() => setIsExcelModalOpen(false)}
-        onSuccess={handleExcelSuccess}
-        entityType="qualifications"
-        entityName="Qualifications"
+        onProcessed={() => {
+          setIsExcelModalOpen(false);
+          setRefreshTrigger(prev => prev + 1);
+        }}
       />
     </Layout>
   );

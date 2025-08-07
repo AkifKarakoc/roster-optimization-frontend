@@ -22,13 +22,13 @@ import RosterPage from './pages/RosterPage';
 // Development utilities  
 import './utils/rosterTestUtils';
 import Layout from './components/common/Layout';
-import BulkExcelUploadModal from './components/excel/BulkExcelUploadModal';
+import { ExcelImportPage } from './components/excel';
 
 import './App.css';
 
 // Dashboard Page Component with Bulk Upload
 const HomePage: React.FC = () => {
-  const [isBulkUploadOpen, setBulkUploadOpen] = React.useState(false);
+  const [showExcelImport, setShowExcelImport] = React.useState(false);
 
   const entityCards = [
     {
@@ -129,7 +129,7 @@ const HomePage: React.FC = () => {
             </div>
             <div className="flex-shrink-0">
               <button
-                onClick={() => setBulkUploadOpen(true)}
+                onClick={() => setShowExcelImport(true)}
                 className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center space-x-2"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -212,15 +212,22 @@ const HomePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Bulk Upload Modal */}
-      <BulkExcelUploadModal
-        isOpen={isBulkUploadOpen}
-        onClose={() => setBulkUploadOpen(false)}
-        onSuccess={() => {
-          setBulkUploadOpen(false);
-          // Could add a success notification here
-        }}
-      />
+      {/* Excel Import Modal */}
+      {showExcelImport && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative min-h-screen">
+            <button
+              onClick={() => setShowExcelImport(false)}
+              className="absolute top-4 right-4 z-50 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100"
+            >
+              <svg className="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <ExcelImportPage onClose={() => setShowExcelImport(false)} />
+          </div>
+        </div>
+      )}
     </Layout>
   );
 };

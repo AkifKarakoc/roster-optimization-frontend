@@ -9,9 +9,10 @@ import {
   ClockIcon,
   CalendarIcon
 } from '@heroicons/react/24/outline';
-import { TaskDTO, DepartmentDTO } from '../../../types/entities';
+import { TaskDTO, DepartmentDTO, QualificationDTO } from '../../../types/entities';
 import { taskService } from '../../../services/taskService';
 import { departmentService } from '../../../services/departmentService';
+import { qualificationService } from '../../../services/qualificationService';
 import LoadingSpinner from '../../common/LoadingSpinner';
 import ErrorMessage from '../../common/ErrorMessage';
 
@@ -24,6 +25,7 @@ interface TaskListProps {
 const TaskList: React.FC<TaskListProps> = ({ onEdit, onAdd, onExcelUpload }) => {
   const [tasks, setTasks] = useState<TaskDTO[]>([]);
   const [departments, setDepartments] = useState<DepartmentDTO[]>([]);
+  const [qualifications, setQualifications] = useState<QualificationDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,12 +41,26 @@ const TaskList: React.FC<TaskListProps> = ({ onEdit, onAdd, onExcelUpload }) => 
     try {
       setLoading(true);
       setError(null);
-      const [tasksData, departmentsData] = await Promise.all([
+      const [tasksData, departmentsData, qualificationsData] = await Promise.all([
         taskService.getAll(),
-        departmentService.getAll()
+        departmentService.getAll(),
+        qualificationService.getAll()
       ]);
+      
+      console.log('TaskList - Data loaded:', {
+        tasksCount: tasksData.length,
+        qualificationsCount: qualificationsData.length,
+        sampleTask: tasksData[0] ? {
+          id: tasksData[0].id,
+          name: tasksData[0].name,
+          requiredQualificationIds: tasksData[0].requiredQualificationIds,
+          requiredQualifications: tasksData[0].requiredQualifications
+        } : null
+      });
+      
       setTasks(tasksData);
       setDepartments(departmentsData);
+      setQualifications(qualificationsData);
     } catch (err) {
       setError('Failed to load tasks');
       console.error('Error loading tasks:', err);
@@ -126,6 +142,7 @@ const TaskList: React.FC<TaskListProps> = ({ onEdit, onAdd, onExcelUpload }) => 
           <button
             onClick={onExcelUpload}
             className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+            title="Import tasks from Excel file. Use format: Task ID, Name, Start Time, End Time, Required Staff Count, Department, Required Qualifications, Description, Active"
           >
             <DocumentArrowUpIcon className="w-5 h-5" />
             <span>Excel Import</span>
@@ -223,11 +240,6 @@ const TaskList: React.FC<TaskListProps> = ({ onEdit, onAdd, onExcelUpload }) => 
                     </div>
                   </div>
 
-                  {task.description && (
-                    <p className="text-gray-600 mb-3 text-sm line-clamp-2">
-                      {task.description}
-                    </p>
-                  )}
 
                   {/* Time Information */}
                   <div className="space-y-2 mb-4">
@@ -254,19 +266,44 @@ const TaskList: React.FC<TaskListProps> = ({ onEdit, onAdd, onExcelUpload }) => 
                     </div>
                   )}
 
-                  {/* Required Qualifications */}
-                  {task.requiredQualifications && task.requiredQualifications.length > 0 && (
+                  {/* Description - moved here */}
+                  {task.description && (
+                    <div className="mb-3">
+                      <p className="text-gray-600 text-sm line-clamp-2">
+                        {task.description}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Required Qualifications - moved above Active Status */}
+                  {((task.requiredQualifications && task.requiredQualifications.length > 0) || 
+                    (task.requiredQualificationIds && task.requiredQualificationIds.length > 0)) && (
                     <div className="mb-3">
                       <span className="text-sm text-gray-500 block mb-1">Required Qualifications:</span>
                       <div className="flex flex-wrap gap-1">
-                        {task.requiredQualifications.map(qual => (
-                          <span 
-                            key={qual.id} 
-                            className="inline-flex px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full"
-                          >
-                            {qual.name}
-                          </span>
-                        ))}
+                        {/* First try to use full qualification objects */}
+                        {task.requiredQualifications && task.requiredQualifications.length > 0 
+                          ? task.requiredQualifications.map(qual => (
+                              <span 
+                                key={qual.id} 
+                                className="inline-flex px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full"
+                              >
+                                {qual.name}
+                              </span>
+                            ))
+                          : /* Fallback to matching IDs with qualifications array */
+                            task.requiredQualificationIds?.map(qualId => {
+                              const qualification = qualifications.find(q => q.id === qualId);
+                              return qualification ? (
+                                <span 
+                                  key={qualId} 
+                                  className="inline-flex px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full"
+                                >
+                                  {qualification.name}
+                                </span>
+                              ) : null;
+                            }).filter(Boolean)
+                        }
                       </div>
                     </div>
                   )}

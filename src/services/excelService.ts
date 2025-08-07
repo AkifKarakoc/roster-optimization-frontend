@@ -1,73 +1,91 @@
 import { api } from './api';
 
-export interface CellSuggestion {
-  type: 'CORRECTION' | 'WARNING' | 'INFO';
-  suggestion: string;
-  confidence: number;
-}
-
-export interface CellDetail {
-  value: string;
-  status: 'VALID' | 'WARNING' | 'ERROR' | 'INFO';
-  message?: string;
-  suggestions?: CellSuggestion[];
-}
-
 export interface ExcelRow {
+  rowId: string;
   rowNumber: number;
-  selected: boolean;
-  rowStatus: 'valid' | 'warning' | 'error';
-  importStatus: 'NOT_PROCESSED' | 'IMPORTED' | 'FAILED' | 'SKIPPED';
-  cellDetails: { [key: string]: CellDetail };
+  entityType: string;
+  cellValues: { [key: string]: string };
+  errors: ExcelError[];
+  canImport: boolean;
+  operation: 'ADD' | 'UPDATE' | 'DELETE';
+  entityId: string | null;
+  entityName: string | null;
+  operationFromCell: string;
+  errorSummary: string;
+  mainEntityId: string;
 }
 
-export interface ExcelStatistics {
+export interface ExcelError {
+  fieldName: string;
+  severity: 'ERROR' | 'WARNING' | 'INFO';
+  errorMessage: string;
+  suggestedFix: string | null;
+  currentValue: string | null;
+  expectedFormat: string | null;
+  blocking: boolean;
+  fullDescription: string;
+}
+
+export interface ExcelSheet {
+  sheetName: string;
+  entityType: string;
+  headers: string[];
+  rows: ExcelRow[];
   totalRows: number;
   validRows: number;
-  warningRows: number;
   errorRows: number;
-  selectedRows: number;
-  canProceed: boolean;
+  warningRows: number;
+  hasOperationColumn: boolean;
+  mainIdColumn: string;
+  importableRows: number;
+  operationColumnName: string | null;
 }
 
-export interface ExcelPreviewResponseEnhanced {
+export interface ExcelProcessingResult {
   sessionId: string;
-  entityType: string;
-  canProceed: boolean;
-  rows: ExcelRow[];
-  statistics: ExcelStatistics;
+  fileName: string;
+  processedAt: string;
+  sheets: ExcelSheet[];
+  totalSheets: number;
+  totalRows: number;
+  validRows: number;
+  errorRows: number;
+  warningRows: number;
+  importableRows: number;
+  entityTypeCounts: { [entityType: string]: number };
+  processingMessages: string[];
+  hasBlockingErrors: boolean;
+  processingTimeMs: number;
+  successRate: number;
+  processingSummary: {
+    fileName: string;
+    processedAt: string;
+    totalSheets: number;
+    totalRows: number;
+    successRate: number;
+    importableRows: number;
+    hasBlockingErrors: boolean;
+    readinessSummary: string;
+    processingTimeMs: number;
+  };
+  importReadinessSummary: string;
 }
 
-export interface BulkExcelPreviewResponse {
-  sessionId: string;
-  sheets: { [entityType: string]: ExcelPreviewResponseEnhanced };
-}
-
-export interface ImportSelectedResult {
-  sessionId: string;
+export interface ExcelImportResult {
   success: boolean;
   message: string;
-  totalProcessed: number;
-  successfulImports: number;
-  failedImports: number;
-  importedRows: number[];
-}
-
-export interface ColumnInfo {
-  name: string;
-  displayName: string;
-  required: boolean;
-  type: string;
-  description?: string;
+  importedEntities: { [entityType: string]: number };
+  failedEntities: { [entityType: string]: number };
+  errors: string[];
+  warnings: string[];
 }
 
 export const excelService = {
-  // Single entity upload and preview (Enhanced API)
-  uploadAndPreview: async (file: File, entityType: string): Promise<ExcelPreviewResponseEnhanced> => {
+  uploadAndProcess: async (file: File): Promise<ExcelProcessingResult> => {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await api.post(`/excel/preview/${entityType}`, formData, {
+    const response = await api.post('/excel/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -76,75 +94,43 @@ export const excelService = {
     return response.data;
   },
 
-  // Bulk upload and preview
-  uploadBulkAndPreview: async (file: File): Promise<BulkExcelPreviewResponse> => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const response = await api.post('/excel/preview/bulk', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-
+  executeImport: async (sessionId: string, options?: {
+    selectedRowIds?: string[];
+    continueOnError?: boolean;
+    validateBeforeImport?: boolean;
+  }): Promise<ExcelImportResult> => {
+    const requestBody = {
+      selectedRowIds: options?.selectedRowIds || [],
+      continueOnError: options?.continueOnError ?? true,
+      validateBeforeImport: options?.validateBeforeImport ?? true,
+      options: {
+        useTransactions: true,
+        rollbackOnError: false,
+        conflictResolution: "SKIP",
+        skipDuplicates: true,
+        updateExisting: false,
+        batchSize: 100,
+        enableParallelProcessing: false,
+        detailedLogging: true,
+        generateReport: true
+      }
+    };
+    
+    console.log('🚀 Import Request Body:', requestBody);
+    
+    const response = await api.post(`/excel/import/${sessionId}`, requestBody);
     return response.data;
   },
 
-  // Get enhanced session data
-  getEnhancedSession: async (sessionId: string): Promise<ExcelPreviewResponseEnhanced> => {
-    const response = await api.get(`/excel/session/${sessionId}/enhanced`);
-    return response.data;
-  },
-
-  // Update row selection
-  updateSelection: async (sessionId: string, selectedRowNumbers: number[]): Promise<void> => {
-    await api.put(`/excel/session/${sessionId}/selection`, { selectedRowNumbers });
-  },
-
-  // Auto-correct errors
-  autoCorrect: async (sessionId: string, rowNumbers?: number[]): Promise<ExcelPreviewResponseEnhanced> => {
-    const body = rowNumbers ? { rowNumbers } : {};
-    const response = await api.post(`/excel/session/${sessionId}/auto-correct`, body);
-    return response.data;
-  },
-
-  // Import selected rows
-  importSelected: async (
-    sessionId: string, 
-    selectedRowNumbers: number[], 
-    applyCorrections: boolean = true
-  ): Promise<ImportSelectedResult> => {
-    const response = await api.post(`/excel/import/${sessionId}`, {
-      selectedRowNumbers,
-      applyCorrections
-    });
-    return response.data;
-  },
-
-  // Delete session
-  deleteSession: async (sessionId: string): Promise<void> => {
-    await api.delete(`/excel/session/${sessionId}`);
-  },
-
-  // Get column information for entity type
-  getColumnInfo: async (entityType: string): Promise<ColumnInfo[]> => {
-    const response = await api.get(`/excel/column-info/${entityType}`);
-    return response.data;
-  },
-
-  // Download single entity template
-  downloadTemplate: async (entityType: string): Promise<Blob> => {
-    const response = await api.get(`/excel/template/${entityType}`, {
+  downloadTemplate: async (): Promise<Blob> => {
+    const response = await api.get('/excel/template', {
       responseType: 'blob',
     });
     return response.data;
   },
 
-  // Download bulk template
-  downloadBulkTemplate: async (): Promise<Blob> => {
-    const response = await api.get('/excel/template/bulk', {
-      responseType: 'blob',
-    });
+  getProcessingResult: async (sessionId: string): Promise<ExcelProcessingResult> => {
+    const response = await api.get(`/excel/session/${sessionId}`);
     return response.data;
   },
 };

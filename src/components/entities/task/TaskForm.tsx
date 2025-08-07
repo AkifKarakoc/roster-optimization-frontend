@@ -45,6 +45,13 @@ const TaskForm: React.FC<TaskFormProps> = ({
 
   useEffect(() => {
     if (task) {
+      console.log('TaskForm - Task data received:', {
+        id: task.id,
+        name: task.name,
+        requiredQualificationIds: task.requiredQualificationIds,
+        requiredQualifications: task.requiredQualifications
+      });
+      
       setFormData({
         name: task.name || '',
         startTime: task.startTime || '',
@@ -55,10 +62,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
         departmentId: task.departmentId || 0,
         requiredQualificationIds: task.requiredQualificationIds || []
       });
-      // Set selected qualifications if task has them
-      if (task.requiredQualifications) {
-        setSelectedQualifications(task.requiredQualifications);
-      }
     } else {
       setFormData({
         name: '',
@@ -74,6 +77,43 @@ const TaskForm: React.FC<TaskFormProps> = ({
     }
     setError(null);
   }, [task, isOpen]);
+
+  // Match qualification IDs to actual qualifications when both are available
+  useEffect(() => {
+    console.log('TaskForm - Qualification matching effect:', {
+      hasTask: !!task,
+      taskId: task?.id,
+      qualificationsLength: qualifications.length,
+      requiredQualificationIds: task?.requiredQualificationIds,
+      requiredQualifications: task?.requiredQualifications
+    });
+    
+    if (task && qualifications.length > 0) {
+      // Always prioritize requiredQualificationIds as the source of truth
+      if (task.requiredQualificationIds && task.requiredQualificationIds.length > 0) {
+        // Match IDs to qualification objects
+        const matchedQualifications = qualifications.filter(q => 
+          task.requiredQualificationIds?.includes(q.id!)
+        );
+        console.log('TaskForm - Matched qualifications:', {
+          ids: task.requiredQualificationIds,
+          matched: matchedQualifications.map(q => ({ id: q.id, name: q.name }))
+        });
+        setSelectedQualifications(matchedQualifications);
+      } else if (task.requiredQualifications && task.requiredQualifications.length > 0) {
+        // Fallback to full qualification objects if IDs not available
+        console.log('TaskForm - Using requiredQualifications directly');
+        setSelectedQualifications(task.requiredQualifications);
+      } else {
+        console.log('TaskForm - No qualifications found, clearing selection');
+        setSelectedQualifications([]);
+      }
+    } else if (!task) {
+      // Reset for new task
+      console.log('TaskForm - Clearing qualifications for new task');
+      setSelectedQualifications([]);
+    }
+  }, [task, qualifications]);
 
   const loadData = async () => {
     try {
@@ -171,10 +211,16 @@ const TaskForm: React.FC<TaskFormProps> = ({
       setLoading(true);
       setError(null);
 
+      // Ensure requiredQualificationIds is updated from selectedQualifications
+      const taskData = {
+        ...formData,
+        requiredQualificationIds: selectedQualifications.map(q => q.id!).filter(id => id !== undefined)
+      };
+
       if (isEdit) {
-        await taskService.update(task.id!, formData);
+        await taskService.update(task.id!, taskData);
       } else {
-        await taskService.create(formData as Omit<TaskDTO, 'id'>);
+        await taskService.create(taskData as Omit<TaskDTO, 'id'>);
       }
 
       onSave();
@@ -335,24 +381,23 @@ const TaskForm: React.FC<TaskFormProps> = ({
             {/* Available Qualifications */}
             <div className="border border-gray-300 rounded-lg p-3 max-h-40 overflow-y-auto">
               <div className="text-xs text-gray-500 mb-2">
-                Click to select/deselect qualifications:
+                Select required qualifications:
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {qualifications.map(qual => {
                   const isSelected = selectedQualifications.some(q => q.id === qual.id);
                   return (
-                    <button
-                      key={qual.id}
-                      type="button"
-                      onClick={() => handleQualificationToggle(qual)}
-                      className={`text-left px-3 py-2 text-sm rounded-lg transition-colors ${
-                        isSelected 
-                          ? 'bg-purple-100 text-purple-800 border border-purple-300'
-                          : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
-                      }`}
-                    >
-                      {qual.name}
-                    </button>
+                    <label key={qual.id} className="flex items-center space-x-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => handleQualificationToggle(qual)}
+                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                      />
+                      <span className={isSelected ? 'text-purple-700 font-medium' : 'text-gray-700'}>
+                        {qual.name}
+                      </span>
+                    </label>
                   );
                 })}
               </div>

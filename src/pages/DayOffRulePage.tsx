@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Layout from '../components/common/Layout';
 import DayOffRuleList from '../components/entities/day-off-rule/DayOffRuleList';
 import DayOffRuleForm from '../components/entities/day-off-rule/DayOffRuleForm';
-import ExcelUploadModal from '../components/excel/ExcelUploadModal';
+import { ExcelUploadModal } from '../components/excel';
 import { DayOffRuleDTO } from '../types/entities';
 
 const DayOffRulePage: React.FC = () => {
@@ -34,9 +34,6 @@ const DayOffRulePage: React.FC = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
-  const handleExcelSuccess = () => {
-    setRefreshTrigger(prev => prev + 1);
-  };
 
   return (
     <Layout>
@@ -57,9 +54,10 @@ const DayOffRulePage: React.FC = () => {
       <ExcelUploadModal
         isOpen={isExcelModalOpen}
         onClose={() => setIsExcelModalOpen(false)}
-        onSuccess={handleExcelSuccess}
-        entityType="day-off-rules"
-        entityName="Day Off Rules"
+        onProcessed={() => {
+          setIsExcelModalOpen(false);
+          setRefreshTrigger(prev => prev + 1);
+        }}
       />
     </Layout>
   );

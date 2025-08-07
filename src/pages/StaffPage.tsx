@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Layout from '../components/common/Layout';
 import StaffList from '../components/entities/staff/StaffList';
 import StaffForm from '../components/entities/staff/StaffForm';
-import ExcelUploadModal from '../components/excel/ExcelUploadModal';
+import { ExcelUploadModal } from '../components/excel';
 import { StaffDTO } from '../types/entities';
 
 const StaffPage: React.FC = () => {
@@ -34,9 +34,6 @@ const StaffPage: React.FC = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
-  const handleExcelSuccess = () => {
-    setRefreshTrigger(prev => prev + 1);
-  };
 
   return (
     <Layout>
@@ -57,9 +54,10 @@ const StaffPage: React.FC = () => {
       <ExcelUploadModal
         isOpen={isExcelModalOpen}
         onClose={() => setIsExcelModalOpen(false)}
-        onSuccess={handleExcelSuccess}
-        entityType="staff"
-        entityName="Staff"
+        onProcessed={() => {
+          setIsExcelModalOpen(false);
+          setRefreshTrigger(prev => prev + 1);
+        }}
       />
     </Layout>
   );

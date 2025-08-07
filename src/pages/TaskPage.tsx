@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Layout from '../components/common/Layout';
 import TaskList from '../components/entities/task/TaskList';
 import TaskForm from '../components/entities/task/TaskForm';
-import ExcelUploadModal from '../components/excel/ExcelUploadModal';
+import { ExcelUploadModal } from '../components/excel';
 import { TaskDTO } from '../types/entities';
 
 const TaskPage: React.FC = () => {
@@ -34,9 +34,6 @@ const TaskPage: React.FC = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
-  const handleExcelSuccess = () => {
-    setRefreshTrigger(prev => prev + 1);
-  };
 
   return (
     <Layout>
@@ -57,9 +54,10 @@ const TaskPage: React.FC = () => {
       <ExcelUploadModal
         isOpen={isExcelModalOpen}
         onClose={() => setIsExcelModalOpen(false)}
-        onSuccess={handleExcelSuccess}
-        entityType="tasks"
-        entityName="Tasks"
+        onProcessed={() => {
+          setIsExcelModalOpen(false);
+          setRefreshTrigger(prev => prev + 1);
+        }}
       />
     </Layout>
   );

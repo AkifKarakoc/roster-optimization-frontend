@@ -78,6 +78,7 @@ const QualificationList: React.FC<QualificationListProps> = ({ onEdit, onAdd, on
           <button
             onClick={onExcelUpload}
             className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+            title="Import qualifications from Excel file. Use format: Qualification ID, Name, Description, Active"
           >
             <DocumentArrowUpIcon className="w-5 h-5" />
             <span>Excel Import</span>

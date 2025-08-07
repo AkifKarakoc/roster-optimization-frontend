@@ -93,6 +93,7 @@ const ShiftList: React.FC<ShiftListProps> = ({ onEdit, onAdd, onExcelUpload }) =
           <button
             onClick={onExcelUpload}
             className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+            title="Import shifts from Excel file. Use format: Shift ID, Name, Description, Start Time, End Time, Working Period ID, Fixed, Active"
           >
             <DocumentArrowUpIcon className="w-5 h-5" />
             <span>Excel Import</span>
